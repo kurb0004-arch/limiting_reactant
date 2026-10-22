@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Which reactant runs out first?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eff2;--panel:#ffffff;--ink:#16304a;--muted:#4f667a;--line:#c3d1da;--h:#d99a1c;--o:#2b78b8;--w:#1a9b8c;--ok:#1d7a4a;--bad:#a8362d;--flask:#f7fafb;--btn:#16304a;--btnink:#ffffff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--h:#f0b43c;--o:#5aa6e6;--w:#3cc4b2;--ok:#5fd08e;--bad:#f08178;--flask:#132130;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--h:#f0b43c;--o:#5aa6e6;--w:#3cc4b2;--ok:#5fd08e;--bad:#f08178;--flask:#132130;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+main{max-width:680px;margin:0 auto;padding:24px 18px 40px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+.eq{margin:0 0 16px;color:var(--muted);font-size:1.1rem}
+#cv{display:block;width:100%;height:250px;background:var(--flask);border:2px solid var(--line);border-radius:18px 18px 60px 60px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;list-style:none;padding:0;margin:12px 0 18px}
+.chips li{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:.95rem}
+.chips b{font-size:1.05rem}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+fieldset{border:0;padding:0;margin:0 0 16px}
+legend,label{font-weight:700;display:block;margin-bottom:8px;padding:0}
+.opts{display:flex;gap:10px}
+button,input{font:inherit;color:inherit}
+.opt{flex:1;min-height:48px;border:2px solid var(--line);background:transparent;border-radius:10px;cursor:pointer;font-weight:700}
+.opt[aria-pressed="true"]{border-color:var(--o);background:color-mix(in srgb,var(--o) 16%,transparent)}
+input{width:100%;min-height:48px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:transparent}
+.row{margin-bottom:18px}
+.primary{min-height:48px;padding:0 22px;border:0;border-radius:10px;background:var(--btn);color:var(--btnink);font-weight:700;cursor:pointer}
+button:disabled,input:disabled{opacity:.55;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+#verdict{margin:16px 0 0;font-weight:700}
+#verdict.ok{color:var(--ok)}#verdict.bad{color:var(--bad)}
+#why{margin-top:14px}
+table{border-collapse:collapse;width:100%;font-size:.95rem;margin-bottom:10px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:700;color:var(--muted)}
+tr.lim td{font-weight:700;background:color-mix(in srgb,var(--w) 14%,transparent)}
+#why p{margin:8px 0}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;color:var(--muted);font-size:.95rem}
+#next{min-height:44px;padding:0 18px;border:2px solid var(--ink);background:transparent;border-radius:10px;font-weight:700;cursor:pointer}
+.note{color:var(--muted);font-size:.9rem;margin:14px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Which reactant runs out first?</h1>
+<p class="eq">2H₂ + O₂ → 2H₂O</p>
+<canvas id="cv" role="img" aria-label="Flask of reacting molecules"></canvas>
+<ul class="chips" aria-label="Molecules in the flask">
+  <li><span class="dot" style="background:var(--h)"></span>H₂ <b id="nH">0</b></li>
+  <li><span class="dot" style="background:var(--o)"></span>O₂ <b id="nO">0</b></li>
+  <li><span class="dot" style="background:var(--w)"></span>H₂O <b id="nW">0</b></li>
+</ul>
+<section class="panel">
+  <fieldset>
+    <legend>Which reactant is limiting?</legend>
+    <div class="opts">
+      <button class="opt" data-v="H" aria-pressed="false">H₂</button>
+      <button class="opt" data-v="O" aria-pressed="false">O₂</button>
+    </div>
+  </fieldset>
+  <div class="row">
+    <label for="yield">How many H₂O molecules will form?</label>
+    <input id="yield" type="number" min="0" max="20" inputmode="numeric">
+  </div>
+  <button id="go" class="primary">Check and run reaction</button>
+  <p id="verdict" aria-live="polite"></p>
+  <div id="why"></div>
+  <div class="foot"><span id="streak"></span><button id="next" hidden>Next round</button></div>
+</section>
+<p class="note">Counts are molecules. The same ratios hold for moles: 6 H₂ and 2 O₂ behave like 6 mol H₂ and 2 mol O₂.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NAME={H:'H₂',O:'O₂'};
+let W=600,H=250,round,mols=[],state='ask',group=null,nextAt=0,stepsLeft=0,choice=null,answer=null,streak=0,best=0;
+try{best=+localStorage.getItem('lr-best')||0}catch(e){}
+
+function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function mk(t){return{t,x:30+Math.random()*(W-60),y:30+Math.random()*(H-60),vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,a:Math.random()*6.28,va:(Math.random()-.5)*.03,f:0,busy:0}}
+function resize(){
+  const d=window.devicePixelRatio||1;
+  W=cv.clientWidth;H=cv.clientHeight;
+  cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+  mols.forEach(m=>{m.x=Math.min(Math.max(m.x,20),W-20)});
+}
+function counts(){
+  $('nH').textContent=mols.filter(m=>m.t==='H').length;
+  $('nO').textContent=mols.filter(m=>m.t==='O').length;
+  $('nW').textContent=mols.filter(m=>m.t==='W').length;
+}
+function setup(){
+  let h,o;
+  do{h=2*rnd(1,5);o=rnd(1,6)}while(h===2*o);
+  round={h,o,y:Math.min(h,2*o),lim:(h/2<o)?'H':'O'};
+  mols=[];
+  for(let i=0;i<h;i++)mols.push(mk('H'));
+  for(let i=0;i<o;i++)mols.push(mk('O'));
+  state='ask';group=null;stepsLeft=round.y/2;choice=null;answer=null;
+  document.querySelectorAll('.opt').forEach(b=>{b.setAttribute('aria-pressed','false');b.disabled=false});
+  $('yield').value='';$('yield').disabled=false;$('go').disabled=false;
+  $('verdict').textContent='';$('verdict').className='';$('why').innerHTML='';$('next').hidden=true;
+  cv.setAttribute('aria-label','Flask holding '+h+' H₂ molecules and '+o+' O₂ molecules');
+  counts();showStreak();
+}
+function showStreak(){$('streak').textContent='Streak: '+streak+'. Best: '+best+'.'}
+
+document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+  if(state!=='ask')return;
+  choice=b.dataset.v;
+  document.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+}));
+$('yield').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+$('go').addEventListener('click',go);
+$('next').addEventListener('click',setup);
+
+function go(){
+  if(state!=='ask')return;
+  const raw=$('yield').value;
+  if(!choice||raw===''){$('verdict').className='bad';$('verdict').textContent='Pick the limiting reactant and enter a number of H₂O molecules first.';return}
+  const okL=choice===round.lim,okY=+raw===round.y;
+  answer={okL,okY};
+  const lim=NAME[round.lim],other=NAME[round.lim==='H'?'O':'H'];
+  const v=$('verdict');
+  if(okL&&okY){v.className='ok';v.textContent='Correct. '+lim+' runs out first and '+round.y+' H₂O form. Watch it happen.';streak++;}
+  else if(okL){v.className='bad';v.textContent='You found the limiting reactant, but the yield isn’t '+raw+'. Count the H₂O as they form.';streak=0;}
+  else{v.className='bad';v.textContent='Not quite: '+other+' isn’t the one that runs out. Watch the flask.';streak=0;}
+  if(streak>best){best=streak;try{localStorage.setItem('lr-best',String(best))}catch(e){}}
+  showStreak();
+  state='run';nextAt=performance.now()+400;
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);$('yield').disabled=true;$('go').disabled=true;
+  if(reduce){while(stepsLeft>0){startStep(0);endStep(0)}finish()}
+}
+function startStep(now){
+  const g=[...mols.filter(m=>m.t==='H'&&!m.busy).slice(0,2),...mols.filter(m=>m.t==='O'&&!m.busy).slice(0,1)];
+  g.forEach(m=>m.busy=1);
+  group={g,tx:70+Math.random()*(W-140),ty:60+Math.random()*(H-150),t0:now};
+}
+function endStep(now){
+  const [a,b,c]=group.g,{tx,ty}=group;
+  a.t='W';b.t='W';a.x=tx-16;b.x=tx+16;a.y=b.y=ty;a.busy=b.busy=0;a.f=b.f=1;
+  mols=mols.filter(m=>m!==c);
+  group=null;stepsLeft--;nextAt=now+300;counts();
+  if(stepsLeft===0&&!reduce)finish();
+}
+function finish(){
+  state='done';
+  const rH=round.h/2,rO=round.o,lr=Math.min(rH,rO),hi=Math.max(rH,rO);
+  const left=[];
+  if(round.h-round.y>0)left.push((round.h-round.y)+' H₂');
+  if(round.o-round.y/2>0)left.push((round.o-round.y/2)+' O₂');
+  const lim=NAME[round.lim],other=NAME[round.lim==='H'?'O':'H'];
+  $('why').innerHTML=
+   '<table><tr><th>Reactant</th><th>In flask</th><th>Used per reaction</th><th>Reactions it allows</th></tr>'+
+   '<tr class="'+(round.lim==='H'?'lim':'')+'"><td>H₂</td><td>'+round.h+'</td><td>2</td><td>'+rH+'</td></tr>'+
+   '<tr class="'+(round.lim==='O'?'lim':'')+'"><td>O₂</td><td>'+round.o+'</td><td>1</td><td>'+rO+'</td></tr></table>'+
+   '<p>'+lim+' allows only '+lr+' reactions, fewer than the '+hi+' that '+other+' allows. So '+lim+' is used up first: '+lr+' reactions × 2 H₂O each = '+round.y+' H₂O.</p>'+
+   '<p>Left over: '+left.join(' and ')+'.</p>';
+  $('next').hidden=false;$('next').focus();
+}
+
+function ball(x,y,r,c){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=c;ctx.fill()}
+function drawM(m,C){
+  const ca=Math.cos(m.a),sa=Math.sin(m.a);
+  if(m.t==='H'){ball(m.x-ca*6,m.y-sa*6,7,C.h);ball(m.x+ca*6,m.y+sa*6,7,C.h)}
+  else if(m.t==='O'){ball(m.x-ca*9,m.y-sa*9,10,C.o);ball(m.x+ca*9,m.y+sa*9,10,C.o)}
+  else{
+    ctx.globalAlpha=.22;ball(m.x,m.y,24,C.w);ctx.globalAlpha=1;
+    for(const d of[-.9,.9])ball(m.x+Math.cos(m.a+1.57+d)*12,m.y+Math.sin(m.a+1.57+d)*12,6,C.h);
+    ball(m.x,m.y,10,C.o);
+  }
+  if(m.f>0){ctx.globalAlpha=m.f;ctx.lineWidth=3;ctx.strokeStyle=C.w;ctx.beginPath();ctx.arc(m.x,m.y,26+(1-m.f)*14,0,7);ctx.stroke();ctx.globalAlpha=1}
+}
+function frame(now){
+  const cs=getComputedStyle(document.documentElement);
+  const C={h:cs.getPropertyValue('--h'),o:cs.getPropertyValue('--o'),w:cs.getPropertyValue('--w')};
+  for(const m of mols){
+    if(m.busy&&group){m.x+=(group.tx-m.x)*.09;m.y+=(group.ty-m.y)*.09;m.a+=.18}
+    else{
+      m.x+=m.vx;m.y+=m.vy;m.a+=m.va;
+      if(m.x<18||m.x>W-18)m.vx*=-1;
+      if(m.y<18||m.y>H-30)m.vy*=-1;
+    }
+    if(m.f>0)m.f-=.015;
+  }
+  if(state==='run'&&!reduce){
+    if(!group&&stepsLeft>0&&now>=nextAt)startStep(now);
+    else if(group&&now-group.t0>800)endStep(now);
+  }
+  ctx.clearRect(0,0,W,H);
+  for(const m of mols)drawM(m,C);
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize',resize);
+resize();setup();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
