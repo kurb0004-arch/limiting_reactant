@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Limiting reagent: striking a match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eff2;--panel:#ffffff;--ink:#16304a;--muted:#4f667a;--line:#c3d1da;--o:#2b78b8;--ok:#1d7a4a;--bad:#a8362d;--btn:#16304a;--btnink:#ffffff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+main{max-width:700px;margin:0 auto;padding:24px 18px 48px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+.sub{margin:0 0 16px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.eqn{font-size:1.15rem;font-weight:700;margin:8px 0}
+.masses{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:10px 0 0;color:var(--muted);font-size:.92rem}
+.masses li{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+.step h2{font-size:1.15rem;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--btn);color:var(--btnink);font-size:.9rem}
+.step[data-state="locked"]{opacity:.5}
+.step[data-state="done"] .n{background:var(--ok);color:#fff}
+.step p{margin:6px 0}
+.fields{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0}
+.fld{display:block}
+.lab{display:block;font-weight:700;font-size:.95rem;margin-bottom:4px}
+.inp{display:flex;align-items:center;gap:8px}
+input{width:130px;min-height:46px;padding:6px 10px;font:inherit;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px}
+input.bad{border-color:var(--bad)}
+.eqrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:1.1rem;font-weight:700;margin:12px 0}
+.eqrow input{width:64px;text-align:center}
+.ch{display:flex;gap:8px}
+.opt{min-height:46px;padding:0 18px;font:inherit;font-weight:700;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--o);background:color-mix(in srgb,var(--o) 16%,transparent)}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.primary,.ghost{min-height:46px;padding:0 20px;font:inherit;font-weight:700;border-radius:10px;cursor:pointer}
+.primary{border:0;background:var(--btn);color:var(--btnink)}
+.ghost{border:2px solid var(--ink);background:transparent;color:inherit}
+button:disabled,input:disabled{cursor:not-allowed}
+.step[data-state="done"] input{opacity:.85}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+.fb{font-weight:700;margin:10px 0 0}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}
+.worked{margin-top:10px;padding:10px 12px;border-left:4px solid var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent);border-radius:0 8px 8px 0}
+.worked p{margin:4px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Striking a match</h1>
+<p class="sub">Limiting reagent, theoretical yield, and percent yield</p>
+<section class="card" id="prob"></section>
+<div id="steps"></div>
+<section class="card" id="end" hidden></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const M={K:39.10,Cl:35.45,O:16.00,P:30.97};
+const MM={KClO3:M.K+M.Cl+3*M.O,P4:4*M.P,P4O10:4*M.P+10*M.O};
+const f4=x=>String(+x.toPrecision(4)),f3=x=>String(+x.toPrecision(3));
+const near=(v,x)=>Math.abs(v-x)<=.03*Math.abs(x);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let prob,C,steps,attempts,sel;
+
+function calc(p){
+  const nK=p.mK/MM.KClO3,nP=p.mP/MM.P4,yK=nK*0.3,yP=nP;
+  const limK=yK<yP,theo=Math.min(yK,yP)*MM.P4O10;
+  return{nK,nP,yK,yP,lim:limK?'KClO₃':'P₄',nLim:limK?nK:nP,theo,pct:p.act/theo*100,yOther:Math.max(yK,yP),rawSmall:nK<nP?'KClO₃':'P₄'};
+}
+function randomProblem(){
+  let mK,mP,c;
+  do{mK=Math.round((25+Math.random()*50)*2)/2;mP=Math.round((10+Math.random()*30)*2)/2;c=calc({mK,mP,act:1})}
+  while(Math.abs(c.yK/c.yP-1)<.15);
+  const act=Math.round(c.theo*(.5+Math.random()*.45)*10)/10;
+  return{mK,mP,act};
+}
+function buildSteps(){
+  const p=prob;
+  return[
+  {title:'Balance the equation',prompt:'Choose whole-number coefficients. Count the atoms of each element on both sides.',eq:true,
+   fields:[{id:'c1',ans:10,type:'int'},{id:'c2',ans:3,type:'int'},{id:'c3',ans:3,type:'int'},{id:'c4',ans:10,type:'int'}],
+   diag:()=>'Not quite. Count K, Cl, O, and P on each side. Remember P₄ has four P atoms, and P₄O₁₀ has four P and ten O.',
+   worked:'10 KClO₃ + 3 P₄ → 3 P₄O₁₀ + 10 KCl. Check: K 10 = 10, Cl 10 = 10, O 30 = 30, P 12 = 12.'},
+  {title:'Molar masses',prompt:'Use K 39.10, Cl 35.45, O 16.00, and P 30.97 g/mol. Add up every atom in the formula.',
+   fields:[{id:'a',label:'KClO₃',unit:'g/mol',ans:MM.KClO3,tol:.005},{id:'b',label:'P₄',unit:'g/mol',ans:MM.P4,tol:.005},{id:'c',label:'P₄O₁₀',unit:'g/mol',ans:MM.P4O10,tol:.005}],
+   diag:v=>near(v.b,M.P)?'P₄ has four phosphorus atoms, so multiply 30.97 by 4.':near(v.c,M.P+10*M.O)?'P₄O₁₀ has four P atoms plus ten O atoms. Count all of them.':'Not quite. Multiply each atomic mass by the subscript in the formula, then add.',
+   worked:`KClO₃: 39.10 + 35.45 + 3(16.00) = ${MM.KClO3.toFixed(2)} g/mol. P₄: 4(30.97) = ${MM.P4.toFixed(2)} g/mol. P₄O₁₀: 4(30.97) + 10(16.00) = ${MM.P4O10.toFixed(2)} g/mol.`},
+  {title:'Moles of each reactant',prompt:'Moles = grams ÷ molar mass.',
+   fields:[{id:'a',label:`Moles of KClO₃ (${p.mK.toFixed(1)} g)`,unit:'mol',ans:C.nK,tol:.02},{id:'b',label:`Moles of P₄ (${p.mP.toFixed(1)} g)`,unit:'mol',ans:C.nP,tol:.02}],
+   diag:v=>(v.a>10||v.b>10)?'Moles = grams ÷ molar mass. Divide, don’t multiply.':near(v.b,p.mP/M.P)?'That divides by the mass of one P atom. Use the molar mass of P₄ ('+MM.P4.toFixed(2)+' g/mol).':'Not quite. Divide each mass by that substance’s molar mass from the last step.',
+   worked:`${p.mK.toFixed(1)} g ÷ ${MM.KClO3.toFixed(2)} g/mol = ${f4(C.nK)} mol KClO₃. ${p.mP.toFixed(1)} g ÷ ${MM.P4.toFixed(2)} g/mol = ${f4(C.nP)} mol P₄.`},
+  {title:'Find the limiting reagent',prompt:'Use the balanced equation to find how many moles of P₄O₁₀ each reactant could make. The one that makes less is limiting.',
+   fields:[{id:'a',label:'Moles of P₄O₁₀ from KClO₃',unit:'mol',ans:C.yK,tol:.02},{id:'b',label:'Moles of P₄O₁₀ from P₄',unit:'mol',ans:C.yP,tol:.02},{id:'lim',label:'Limiting reagent',type:'choice',opts:['KClO₃','P₄'],ans:C.lim}],
+   diag:(v,bad)=>{
+     if(bad.includes('lim')&&!bad.includes('a')&&!bad.includes('b')){
+       return v.lim===C.rawSmall?'Not quite. The limiting reagent is the one that makes less product, not simply the one with fewer moles.':'You picked the reactant with fewer moles, but the equation uses 10 KClO₃ for every 3 P₄. Compare the product each can make.';
+     }
+     if(near(v.a,C.nK))return'That is the moles of KClO₃ itself. Multiply by the ratio, 3 mol P₄O₁₀ per 10 mol KClO₃.';
+     return'Not quite. Use the coefficients: 10 KClO₃ : 3 P₄ : 3 P₄O₁₀.';},
+   worked:`From KClO₃: ${f4(C.nK)} mol × (3 mol P₄O₁₀ ÷ 10 mol KClO₃) = ${f4(C.yK)} mol. From P₄: ${f4(C.nP)} mol × (3 ÷ 3) = ${f4(C.yP)} mol. ${C.lim} makes less product, so it is the limiting reagent.`},
+  {title:'Theoretical yield',prompt:'Convert the moles of P₄O₁₀ made by the limiting reagent into grams.',
+   fields:[{id:'a',label:'Theoretical yield of P₄O₁₀',unit:'g',ans:C.theo,tol:.01}],
+   diag:v=>near(v.a,C.yOther*MM.P4O10)?'That is what the excess reagent could make. The limiting reagent runs out first, so it sets the yield.':near(v.a,C.nLim*MM.P4O10)?'That skips the mole ratio. Convert moles of limiting reagent to moles of P₄O₁₀ first, then to grams.':'Not quite. Multiply moles of P₄O₁₀ (from the limiting reagent) by '+MM.P4O10.toFixed(2)+' g/mol.',
+   worked:`${f4(Math.min(C.yK,C.yP))} mol × ${MM.P4O10.toFixed(2)} g/mol = ${f3(C.theo)} g P₄O₁₀.`},
+  {title:'Percent yield',prompt:`${p.act.toFixed(1)} g of P₄O₁₀ was actually recovered. Percent yield = actual ÷ theoretical × 100.`,
+   fields:[{id:'a',label:'Percent yield',unit:'%',ans:C.pct,tol:.01}],
+   diag:v=>near(v.a,100*C.theo/p.act)?'You flipped it. Percent yield is actual ÷ theoretical, not the other way around.':near(v.a*100,C.pct)?'Multiply by 100 to express it as a percent.':'Not quite. Divide the actual yield by your theoretical yield from the last step, then multiply by 100.',
+   worked:`${p.act.toFixed(1)} g ÷ ${f3(C.theo)} g × 100 = ${f3(C.pct)}%.`}
+  ];
+}
+function fieldHTML(i,f){
+  if(f.type==='choice')return`<div class="fld"><span class="lab">${f.label}</span><div class="ch" role="group" aria-label="${f.label}">${f.opts.map(o=>`<button type="button" class="opt" data-i="${i}" data-id="${f.id}" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
+  return`<label class="fld"><span class="lab">${f.label}</span><span class="inp"><input id="f-${i}-${f.id}" type="number" step="any" inputmode="decimal"><span>${f.unit||''}</span></span></label>`;
+}
+function stepHTML(s,i){
+  let body;
+  if(s.eq){
+    const inp=id=>`<input id="f-${i}-${id}" type="number" min="1" step="1" inputmode="numeric" aria-label="Coefficient ${id.slice(1)}">`;
+    body=`<div class="eqrow">${inp('c1')} KClO₃ + ${inp('c2')} P₄ → ${inp('c3')} P₄O₁₀ + ${inp('c4')} KCl</div>`;
+  }else body=`<div class="fields">${s.fields.map(f=>fieldHTML(i,f)).join('')}</div>`;
+  return`<section class="card step" id="s${i}" data-state="locked"><h2><span class="n">${i+1}</span>${s.title}</h2><p>${s.prompt}</p>${body}
+  <div class="actions"><button type="button" class="primary check" data-i="${i}">Check</button><button type="button" class="ghost reveal" data-i="${i}" hidden>Show worked answer</button></div>
+  <p class="fb" id="fb${i}" aria-live="polite"></p><div class="worked" id="w${i}" hidden></div></section>`;
+}
+function setState(i,st){
+  const el=$('s'+i);el.dataset.state=st;
+  el.querySelectorAll('input,.check,.opt').forEach(b=>b.disabled=(st!=='active'));
+  if(st!=='active')el.querySelector('.reveal').hidden=true;
+}
+function init(p){
+  prob=p;C=calc(p);steps=buildSteps();attempts=steps.map(()=>0);sel={};
+  $('prob').innerHTML=`<p>The reaction between potassium chlorate and red phosphorus (P₄) takes place when you strike a match on a matchbox. In a lab, <b>${p.mK.toFixed(1)} g</b> of potassium chlorate (KClO₃) reacted with <b>${p.mP.toFixed(1)} g</b> of red phosphorus.</p>
+  <p class="eqn">KClO₃(s) + P₄(s) → P₄O₁₀(s) + KCl(s)</p>
+  <p><b>a.</b> What is the theoretical yield of tetraphosphorus decaoxide?<br><b>b.</b> What is the percent yield if <b>${p.act.toFixed(1)} g</b> of P₄O₁₀ was recovered?</p>
+  <ul class="masses" aria-label="Atomic masses"><li>K 39.10</li><li>Cl 35.45</li><li>O 16.00</li><li>P 30.97</li></ul>`;
+  $('steps').innerHTML=steps.map(stepHTML).join('');
+  $('end').hidden=true;
+  steps.forEach((s,i)=>setState(i,i===0?'active':'locked'));
+}
+function complete(i,revealed){
+  setState(i,'done');
+  $('fb'+i).className='fb ok';$('fb'+i).textContent=revealed?'Here is the worked answer.':'Correct.';
+  const w=$('w'+i);w.hidden=false;w.innerHTML='<p>'+steps[i].worked+'</p>';
+  if(i+1<steps.length){
+    setState(i+1,'active');
+    const nx=$('s'+(i+1));nx.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
+    const first=nx.querySelector('input,.opt');if(first)first.focus({preventScroll:true});
+  }else finish();
+}
+function finish(){
+  const e=$('end');e.hidden=false;
+  e.innerHTML=`<h2>Summary</h2><p>Limiting reagent: <b>${C.lim}</b>. Theoretical yield: <b>${f3(C.theo)} g</b> of P₄O₁₀. Percent yield: <b>${f3(C.pct)}%</b>.</p>
+  <p>A percent yield below 100% is normal. Real reactions lose product to side reactions, incomplete reaction, and transfers between containers.</p>
+  <div class="actions"><button type="button" class="primary" id="newn">Try new numbers</button><button type="button" class="ghost" id="orig">Redo the original problem</button></div>`;
+  $('newn').onclick=()=>{init(randomProblem());window.scrollTo(0,0)};
+  $('orig').onclick=()=>{init({mK:55.0,mP:35.0,act:25.0});window.scrollTo(0,0)};
+}
+function check(i){
+  const s=steps[i],vals={},bad=[];
+  for(const f of s.fields){
+    let v;
+    if(f.type==='choice')v=sel[i+f.id];
+    else v=parseFloat(($('f-'+i+'-'+f.id).value||'').replace(',','.'));
+    if(v==null||(typeof v==='number'&&Number.isNaN(v))){const fb=$('fb'+i);fb.className='fb no';fb.textContent='Fill in every box first.';return}
+    vals[f.id]=v;
+    const ok=(f.type==='choice'||f.type==='int')?v===f.ans:Math.abs(v-f.ans)<=f.tol*f.ans;
+    if(!ok)bad.push(f.id);
+  }
+  s.fields.forEach(f=>{const el=$('f-'+i+'-'+f.id);if(el)el.classList.toggle('bad',bad.includes(f.id))});
+  if(!bad.length){complete(i,false);return}
+  attempts[i]++;
+  const fb=$('fb'+i);fb.className='fb no';fb.textContent=s.diag(vals,bad);
+  if(attempts[i]>=2)document.querySelector('#s'+i+' .reveal').hidden=false;
+}
+function reveal(i){
+  steps[i].fields.forEach(f=>{
+    if(f.type==='choice'){document.querySelectorAll(`#s${i} .opt`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===f.ans)))}
+    else{const el=$('f-'+i+'-'+f.id);el.value=f.type==='int'?f.ans:f4(f.ans);el.classList.remove('bad')}
+  });
+  complete(i,true);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.classList.contains('check'))check(+t.dataset.i);
+  else if(t.classList.contains('reveal'))reveal(+t.dataset.i);
+  else if(t.classList.contains('opt')){
+    sel[t.dataset.i+t.dataset.id]=t.dataset.v;
+    t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.tagName==='INPUT'){const s=e.target.closest('.step');if(s&&s.dataset.state==='active')check(+s.id.slice(1))}
+});
+init({mK:55.0,mP:35.0,act:25.0});
+</script>
+</body>
+</html>
