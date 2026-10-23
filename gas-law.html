@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rearranging PV = nRT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eff2;--panel:#ffffff;--ink:#16304a;--muted:#4f667a;--line:#c3d1da;--hi:#d99a1c;--o:#2b78b8;--ok:#1d7a4a;--bad:#a8362d;--btn:#16304a;--btnink:#ffffff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--hi:#f0b43c;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--hi:#f0b43c;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+main{max-width:680px;margin:0 auto;padding:24px 18px 40px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+.sub{margin:0 0 16px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+#eq{display:flex;align-items:center;gap:10px;font-size:2.6rem;font-weight:700;margin:4px 0 14px;letter-spacing:.04em}
+#eq .v{padding:0 4px;border-radius:8px}
+#eq .t{background:color-mix(in srgb,var(--hi) 28%,transparent);box-shadow:inset 0 -4px 0 var(--hi)}
+#eq .eqs{color:var(--muted);font-weight:400}
+#q{font-weight:700;margin:0 0 12px}
+#opts{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:520px){#opts{grid-template-columns:1fr 1fr}}
+.opt{min-height:68px;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 12px;font:inherit;font-size:1.35rem;font-weight:700;color:inherit;background:transparent;border:2px solid var(--line);border-radius:12px;cursor:pointer;position:relative}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.opt .tag{position:absolute;top:4px;right:10px;font-size:.72rem;font-weight:700}
+.opt.correct .tag{color:var(--ok)}.opt.wrong .tag{color:var(--bad)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.15;vertical-align:middle}
+.fr span:first-child{border-bottom:2px solid currentColor;padding:0 6px 2px}
+.fr span:last-child{padding-top:2px}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+#verdict{font-weight:700;margin:16px 0 0}
+#verdict.ok{color:var(--ok)}#verdict.bad{color:var(--bad)}
+#why{margin-top:12px}
+#why p{margin:8px 0}
+.step{font-size:1.15rem;font-weight:700;margin:6px 0}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;color:var(--muted);font-size:.95rem}
+#next{min-height:46px;padding:0 20px;border:0;border-radius:10px;background:var(--btn);color:var(--btnink);font:inherit;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+<h1>Solve for one variable</h1>
+<p class="sub">The ideal gas law</p>
+<section class="card">
+  <div id="eq" aria-label="P V equals n R T"></div>
+  <p id="q"></p>
+  <div id="opts" role="group" aria-label="Choose a rearrangement"></div>
+  <p id="verdict" aria-live="polite"></p>
+  <div id="why"></div>
+  <div class="foot"><span id="streak"></span><button id="next" hidden>Next question</button></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const EQ={left:['P','V'],right:['n','R','T']};
+const NAMES={P:'pressure',V:'volume',n:'moles',T:'temperature'};
+let cur=null,last=null,streak=0,best=0,answered=false;
+try{best=+localStorage.getItem('gas-best')||0}catch(e){}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function fr(o){return o.den?'<span class="fr"><span>'+o.num+'</span><span>'+o.den+'</span></span>':o.text}
+function txt(o){return o.den?o.num+' over '+o.den:o.text}
+
+function build(t){
+  const inL=EQ.left.includes(t),own=inL?EQ.left:EQ.right,oth=inL?EQ.right:EQ.left;
+  const p=own.filter(x=>x!==t).join(''),rest=oth.join('');
+  return{t,p,rest,lhs:EQ.left.join(''),rhs:EQ.right.join(''),side:inL?'left':'right',opts:shuffle([
+    {num:rest,den:p,ok:1},
+    {text:rest+p,msg:'That multiplies by '+p+' instead of dividing. '+p+' is multiplied with '+t+', so to cancel it you divide both sides by it.'},
+    {num:p,den:rest,msg:'The top and bottom are swapped. Dividing both sides by '+p+' puts '+p+' on the bottom.'},
+    {text:rest+' − '+p,msg:'Subtraction only cancels something that is added. Here '+p+' is multiplied with '+t+', so use division.'}
+  ])};
+}
+function sp(v,t){return '<span class="v'+(v===t?' t':'')+'">'+v+'</span>'}
+
+function show(){
+  let t;do{t=['P','V','n','T'][Math.floor(Math.random()*4)]}while(t===last);
+  last=t;cur=build(t);answered=false;
+  $('eq').innerHTML=EQ.left.map(v=>sp(v,t)).join('')+'<span class="eqs">=</span>'+EQ.right.map(v=>sp(v,t)).join('');
+  $('q').textContent='Rearrange to solve for '+t+' ('+NAMES[t]+').';
+  const box=$('opts');box.innerHTML='';
+  cur.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.setAttribute('aria-label',t+' equals '+txt(o));
+    b.innerHTML=t+' = '+fr(o);
+    b.addEventListener('click',()=>pick(i));
+    box.appendChild(b);
+  });
+  $('verdict').textContent='';$('verdict').className='';$('why').innerHTML='';$('next').hidden=true;
+  showStreak();
+}
+function showStreak(){$('streak').textContent='Streak: '+streak+'. Best: '+best+'.'}
+
+function pick(i){
+  if(answered)return;
+  answered=true;
+  const o=cur.opts[i],btns=[...$('opts').children];
+  btns.forEach((b,j)=>{
+    b.disabled=true;
+    const tag=document.createElement('span');tag.className='tag';
+    if(cur.opts[j].ok){b.classList.add('correct');tag.textContent='Correct answer';b.appendChild(tag)}
+    else if(j===i){b.classList.add('wrong');tag.textContent='Your choice';b.appendChild(tag)}
+  });
+  const v=$('verdict');
+  if(o.ok){v.className='ok';v.textContent='Correct.';streak++}
+  else{v.className='bad';v.textContent='Not quite. '+o.msg;streak=0}
+  if(streak>best){best=streak;try{localStorage.setItem('gas-best',String(best))}catch(e){}}
+  showStreak();
+  const c=cur.opts.find(x=>x.ok);
+  let w='<p>In PV = nRT, <b>'+cur.t+'</b> is multiplied by <b>'+cur.p+'</b> on the '+cur.side+' side. To get '+cur.t+' alone, divide both sides by '+cur.p+':</p>'+
+    '<p class="step">'+cur.lhs+' ÷ '+cur.p+' = '+cur.rhs+' ÷ '+cur.p+'</p>'+
+    '<p>The '+cur.p+' cancels on the '+cur.side+' side, leaving:</p>'+
+    '<p class="step">'+cur.t+' = '+fr(c)+'</p>'+
+    '<p>Whatever you do to one side, you do to the other.'+(cur.p.includes('R')?' R is a constant, but it still has to be divided away like a variable.':'')+'</p>';
+  $('why').innerHTML=w;
+  $('next').hidden=false;$('next').focus();
+}
+$('next').addEventListener('click',show);
+show();
+</script>
+</body>
+</html>
