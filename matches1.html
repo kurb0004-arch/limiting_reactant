@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Limiting reagent by dimensional analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eff2;--panel:#ffffff;--ink:#16304a;--muted:#4f667a;--line:#c3d1da;--o:#2b78b8;--ok:#1d7a4a;--bad:#a8362d;--btn:#16304a;--btnink:#ffffff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+main{max-width:720px;margin:0 auto;padding:24px 18px 48px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+.sub{margin:0 0 16px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.eqn{font-size:1.15rem;font-weight:700;margin:8px 0}
+.masses{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:10px 0 0;color:var(--muted);font-size:.92rem}
+.masses li{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+.step h2{font-size:1.15rem;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--btn);color:var(--btnink);font-size:.9rem}
+.step[data-state="locked"]{opacity:.5}
+.step[data-state="done"] .n{background:var(--ok);color:#fff}
+.step p{margin:6px 0}
+.lab{display:block;font-weight:700;font-size:.95rem;margin:12px 0 6px}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;margin:10px 0;border:1px dashed var(--line);border-radius:10px;overflow-x:auto}
+.mul{font-size:1.2rem;color:var(--muted)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.25;font-size:.95rem}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 6px 2px}
+.fr>span:last-child{padding:2px 6px 0}
+.u.x{text-decoration:line-through;text-decoration-thickness:2px;color:var(--muted)}
+.bank{display:flex;flex-wrap:wrap;gap:10px}
+.fbtn{min-height:60px;padding:6px 12px;font:inherit;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px;cursor:pointer}
+.fbtn:disabled{opacity:.4;cursor:not-allowed}
+.ansrow{margin:12px 0;font-weight:700}
+.fld{display:block;margin:12px 0}
+.inp{display:flex;align-items:center;gap:8px}
+input{width:130px;min-height:46px;padding:6px 10px;font:inherit;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px}
+input.bad{border-color:var(--bad)}
+.eqrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:1.1rem;font-weight:700;margin:12px 0}
+.eqrow input{width:64px;text-align:center}
+.ch{display:flex;gap:8px}
+.opt{min-height:46px;padding:0 18px;font:inherit;font-weight:700;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--o);background:color-mix(in srgb,var(--o) 16%,transparent)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.primary,.ghost{min-height:46px;padding:0 20px;font:inherit;font-weight:700;border-radius:10px;cursor:pointer}
+.primary{border:0;background:var(--btn);color:var(--btnink)}
+.ghost{border:2px solid var(--ink);background:transparent;color:inherit}
+button:disabled,input:disabled{cursor:not-allowed}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+.fb{font-weight:700;margin:10px 0 0}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}
+.worked{margin-top:10px;padding:10px 12px;border-left:4px solid var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent);border-radius:0 8px 8px 0}
+.worked p{margin:4px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Striking a match</h1>
+<p class="sub">Limiting reagent and percent yield by dimensional analysis</p>
+<section class="card" id="prob"></section>
+<div id="steps"></div>
+<section class="card" id="end" hidden></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const M={K:39.10,Cl:35.45,O:16.00,P:30.97};
+const MM={KClO3:M.K+M.Cl+3*M.O,P4:4*M.P,P4O10:4*M.P+10*M.O};
+const f4=x=>String(+x.toPrecision(4)),f3=x=>String(+x.toPrecision(3));
+const near=(v,x)=>Math.abs(v-x)<=.03*Math.abs(x);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let prob,C,attempts,sel,picks,facs,pool;
+
+function calc(p){
+  const nK=p.mK/MM.KClO3,nP=p.mP/MM.P4,yK=nK*.3,yP=nP,gK=yK*MM.P4O10,gP=yP*MM.P4O10;
+  const limK=gK<gP,theo=Math.min(gK,gP);
+  return{nK,nP,yK,yP,gK,gP,lim:limK?'KClO₃':'P₄',theo,pct:p.act/theo*100,rawSmall:nK<nP?'KClO₃':'P₄'};
+}
+function randomProblem(){
+  let mK,mP,c;
+  do{mK=Math.round((25+Math.random()*50)*2)/2;mP=Math.round((10+Math.random()*30)*2)/2;c=calc({mK,mP,act:1})}
+  while(Math.abs(c.gK/c.gP-1)<.15);
+  return{mK,mP,act:Math.round(c.theo*(.5+Math.random()*.45)*10)/10};
+}
+function R(k){return k==='K'?{u:'KClO₃',mm:MM.KClO3,m:prob.mK,rc:10,g:C.gK}:{u:'P₄',mm:MM.P4,m:prob.mP,rc:3,g:C.gP}}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeFactors(k){
+  const r=R(k);
+  return[
+    {num:{q:'1',u:'mol '+r.u},den:{q:r.mm.toFixed(2),u:'g '+r.u}},
+    {num:{q:'3',u:'mol P₄O₁₀'},den:{q:String(r.rc),u:'mol '+r.u}},
+    {num:{q:MM.P4O10.toFixed(2),u:'g P₄O₁₀'},den:{q:'1',u:'mol P₄O₁₀'}}
+  ];
+}
+const inv=f=>({num:f.den,den:f.num});
+function frHTML(f,cNum,cDen){
+  return`<span class="fr"><span>${f.num.q} <span class="u${cNum?' x':''}">${f.num.u}</span></span><span>${f.den.q} <span class="u${cDen?' x':''}">${f.den.u}</span></span></span>`;
+}
+const startU=k=>'g '+R(k).u;
+const curU=k=>picks[k].length?facs[k][picks[k].length-1].num.u:startU(k);
+
+const STEPS=[
+  {title:'Balance the equation',prompt:'Choose whole-number coefficients. You will need them for your conversion factors.'},
+  {title:'Chain for KClO₃',key:'K'},
+  {title:'Chain for P₄',key:'P'},
+  {title:'Find the limiting reagent',prompt:'Compare the grams of P₄O₁₀ from your two chains. The reactant that makes less product is limiting.'},
+  {title:'Percent yield'}
+];
+function stepHTML(i){
+  const s=STEPS[i];let body,prompt=s.prompt||'';
+  if(i===0){
+    const inp=id=>`<input id="f-0-${id}" type="number" min="1" step="1" inputmode="numeric" aria-label="Coefficient ${id.slice(1)}">`;
+    body=`<div class="eqrow">${inp('c1')} KClO₃ + ${inp('c2')} P₄ → ${inp('c3')} P₄O₁₀ + ${inp('c4')} KCl</div>`;
+  }else if(s.key){
+    const r=R(s.key);
+    prompt=`Start with ${r.m.toFixed(1)} g ${r.u} and build one long chain to grams of P₄O₁₀. Pick each factor so the unit on the bottom cancels the unit before it.`;
+    body=`<div class="chain" id="ch${s.key}"></div><span class="lab">Conversion factor bank</span><div class="bank" id="bk${s.key}"></div>
+    <label class="ansrow" id="ans${s.key}" hidden>= <input id="f-${i}-a" type="number" step="any" inputmode="decimal"> g P₄O₁₀</label>
+    <div class="actions"><button type="button" class="ghost undo" data-k="${s.key}" data-i="${i}">Undo last factor</button></div>`;
+  }else if(i===3){
+    body=`<div class="fld"><span class="lab">Limiting reagent</span><div class="ch" role="group" aria-label="Limiting reagent">${['KClO₃','P₄'].map(o=>`<button type="button" class="opt" data-i="3" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
+  }else{
+    prompt=`${prob.act.toFixed(1)} g of P₄O₁₀ was actually recovered. Percent yield = actual ÷ theoretical × 100.`;
+    body=`<label class="fld"><span class="lab">Percent yield</span><span class="inp"><input id="f-4-a" type="number" step="any" inputmode="decimal"><span>%</span></span></label>`;
+  }
+  return`<section class="card step" id="s${i}" data-state="locked"><h2><span class="n">${i+1}</span>${s.title}</h2><p>${prompt}</p>${body}
+  <div class="actions"><button type="button" class="primary check" data-i="${i}">Check</button><button type="button" class="ghost reveal" data-i="${i}" hidden>Show worked answer</button></div>
+  <p class="fb" id="fb${i}" aria-live="polite"></p><div class="worked" id="w${i}" hidden></div></section>`;
+}
+function renderChain(k){
+  const i=k==='K'?1:2,r=R(k),ps=picks[k],act=$('s'+i).dataset.state==='active';
+  let h=`<span>${r.m.toFixed(1)} <span class="u${ps.length?' x':''}">g ${r.u}</span></span>`;
+  ps.forEach((f,j)=>{h+=`<span class="mul">×</span>${frHTML(f,j<ps.length-1,true)}`});
+  $('ch'+k).innerHTML=h;
+  $('bk'+k).innerHTML=pool[k].map((f,j)=>`<button type="button" class="fbtn" data-k="${k}" data-j="${j}"${(act&&!ps.includes(f))?'':' disabled'}>${frHTML(f,false,false)}</button>`).join('');
+  const full=ps.length===3;
+  $('ans'+k).hidden=!full;
+  document.querySelector('#s'+i+' .check').hidden=!full;
+  document.querySelector('#s'+i+' .undo').hidden=!act||!ps.length;
+}
+function setState(i,st){
+  const el=$('s'+i);el.dataset.state=st;
+  el.querySelectorAll('input,button').forEach(b=>b.disabled=(st!=='active'));
+  const rv=el.querySelector('.reveal');if(st!=='active')rv.hidden=true;
+  const k=STEPS[i].key;if(k)renderChain(k);
+}
+function init(p){
+  prob=p;C=calc(p);attempts=STEPS.map(()=>0);sel={};
+  facs={K:makeFactors('K'),P:makeFactors('P')};picks={K:[],P:[]};
+  pool={K:shuffle([...facs.K,...facs.K.map(inv)]),P:shuffle([...facs.P,...facs.P.map(inv)])};
+  $('prob').innerHTML=`<p>The reaction between potassium chlorate and red phosphorus (P₄) takes place when you strike a match on a matchbox. In a lab, <b>${p.mK.toFixed(1)} g</b> of potassium chlorate (KClO₃) reacted with <b>${p.mP.toFixed(1)} g</b> of red phosphorus.</p>
+  <p class="eqn">KClO₃(s) + P₄(s) → P₄O₁₀(s) + KCl(s)</p>
+  <p><b>a.</b> What is the theoretical yield of tetraphosphorus decaoxide?<br><b>b.</b> What is the percent yield if <b>${p.act.toFixed(1)} g</b> of P₄O₁₀ was recovered?</p>
+  <ul class="masses" aria-label="Atomic masses"><li>K 39.10</li><li>Cl 35.45</li><li>O 16.00</li><li>P 30.97</li></ul>`;
+  $('steps').innerHTML=STEPS.map((s,i)=>stepHTML(i)).join('');
+  $('end').hidden=true;
+  STEPS.forEach((s,i)=>setState(i,i===0?'active':'locked'));
+}
+function workedText(i){
+  if(i===0)return'10 KClO₃ + 3 P₄ → 3 P₄O₁₀ + 10 KCl. Check: K 10 = 10, Cl 10 = 10, O 30 = 30, P 12 = 12.';
+  if(i===1||i===2){const k=STEPS[i].key,r=R(k);
+    return`${r.m.toFixed(1)} g ${r.u} × (1 mol ${r.u} ÷ ${r.mm.toFixed(2)} g) × (3 mol P₄O₁₀ ÷ ${r.rc} mol ${r.u}) × (${MM.P4O10.toFixed(2)} g P₄O₁₀ ÷ 1 mol P₄O₁₀) = ${f3(r.g)} g P₄O₁₀. Every unit cancels except grams of P₄O₁₀.`;}
+  if(i===3)return`KClO₃ chain: ${f3(C.gK)} g. P₄ chain: ${f3(C.gP)} g. ${C.lim} gives the smaller amount, so it limits and the theoretical yield is ${f3(C.theo)} g P₄O₁₀.`;
+  return`${prob.act.toFixed(1)} g ÷ ${f3(C.theo)} g × 100 = ${f3(C.pct)}%.`;
+}
+function complete(i,revealed){
+  setState(i,'done');
+  $('fb'+i).className='fb ok';$('fb'+i).textContent=revealed?'Here is the worked answer.':'Correct.';
+  const w=$('w'+i);w.hidden=false;w.innerHTML='<p>'+workedText(i)+'</p>';
+  if(i+1<STEPS.length){
+    setState(i+1,'active');
+    const nx=$('s'+(i+1));nx.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
+    const first=nx.querySelector('input,.opt,.fbtn:not(:disabled)');if(first)first.focus({preventScroll:true});
+  }else finish();
+}
+function finish(){
+  const e=$('end');e.hidden=false;
+  e.innerHTML=`<h2>Summary</h2><p>Limiting reagent: <b>${C.lim}</b>. Theoretical yield: <b>${f3(C.theo)} g</b> of P₄O₁₀. Percent yield: <b>${f3(C.pct)}%</b>.</p>
+  <p>A percent yield below 100% is normal. Real reactions lose product to side reactions, incomplete reaction, and transfers between containers.</p>
+  <div class="actions"><button type="button" class="primary" id="newn">Try new numbers</button><button type="button" class="ghost" id="orig">Redo the original problem</button></div>`;
+  $('newn').onclick=()=>{init(randomProblem());window.scrollTo(0,0)};
+  $('orig').onclick=()=>{init({mK:55.0,mP:35.0,act:25.0});window.scrollTo(0,0)};
+}
+function fail(i,msg){
+  attempts[i]++;const fb=$('fb'+i);fb.className='fb no';fb.textContent=msg;
+  if(attempts[i]>=2)document.querySelector('#s'+i+' .reveal').hidden=false;
+}
+function pick(k,j){
+  const i=k==='K'?1:2,f=pool[k][j],n=picks[k].length,cu=curU(k);
+  if(f.den.u!==cu){fail(i,'The units won’t cancel. Your chain currently ends in '+cu+', so the factor needs '+cu+' on the bottom.');return}
+  if(f!==facs[k][n]){fail(i,'The units cancel, but that moves away from your goal, grams of P₄O₁₀. Look for the factor that heads toward it.');return}
+  picks[k].push(f);$('fb'+i).textContent='';renderChain(k);
+  if(picks[k].length===3)$('f-'+i+'-a').focus();
+}
+function check(i){
+  const fb=$('fb'+i);
+  if(i===0){
+    const ans=[10,3,3,10],v=ans.map((a,j)=>parseFloat($('f-0-c'+(j+1)).value));
+    if(v.some(Number.isNaN)){fb.className='fb no';fb.textContent='Fill in every box first.';return}
+    ans.forEach((a,j)=>$('f-0-c'+(j+1)).classList.toggle('bad',v[j]!==a));
+    if(v.every((x,j)=>x===ans[j]))complete(0,false);
+    else fail(0,'Not quite. Count K, Cl, O, and P on each side. P₄ has four P atoms, and P₄O₁₀ has four P and ten O.');
+  }else if(i===1||i===2){
+    const k=STEPS[i].key,r=R(k),v=parseFloat($('f-'+i+'-a').value);
+    if(Number.isNaN(v)){fb.className='fb no';fb.textContent='Enter your answer first.';return}
+    const ok=Math.abs(v-r.g)<=.01*r.g;$('f-'+i+'-a').classList.toggle('bad',!ok);
+    if(ok)complete(i,false);
+    else fail(i,near(v,r.m)?'That is the starting mass. Multiply across the top of the chain, then divide by everything on the bottom.':'Not quite. Multiply all the numbers on top, divide by all the numbers on the bottom, and check your rounding.');
+  }else if(i===3){
+    const v=sel[3];if(!v){fb.className='fb no';fb.textContent='Pick a reactant first.';return}
+    if(v===C.lim)complete(3,false);
+    else fail(3,v===C.rawSmall?'You picked the reactant with fewer moles. Compare the grams of P₄O₁₀ from each chain: the smaller amount is the theoretical yield, and its reactant is limiting.':'Not quite. Compare the grams of P₄O₁₀ from each chain. The reactant giving the smaller amount is limiting.');
+  }else{
+    const v=parseFloat($('f-4-a').value);
+    if(Number.isNaN(v)){fb.className='fb no';fb.textContent='Enter your answer first.';return}
+    const ok=Math.abs(v-C.pct)<=.01*C.pct;$('f-4-a').classList.toggle('bad',!ok);
+    if(ok)complete(4,false);
+    else fail(4,near(v,100*C.theo/prob.act)?'You flipped it. Percent yield is actual ÷ theoretical, not the other way around.':near(v*100,C.pct)?'Multiply by 100 to express it as a percent.':'Not quite. Divide the actual yield by your theoretical yield, then multiply by 100.');
+  }
+}
+function reveal(i){
+  if(i===0)[10,3,3,10].forEach((a,j)=>{const el=$('f-0-c'+(j+1));el.value=a;el.classList.remove('bad')});
+  else if(i===1||i===2){const k=STEPS[i].key;picks[k]=[...facs[k]];$('f-'+i+'-a').value=f4(R(k).g)}
+  else if(i===3)document.querySelectorAll('#s3 .opt').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===C.lim)));
+  else $('f-4-a').value=f4(C.pct);
+  complete(i,true);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.classList.contains('fbtn'))pick(t.dataset.k,+t.dataset.j);
+  else if(t.classList.contains('undo')){picks[t.dataset.k].pop();$('fb'+t.dataset.i).textContent='';renderChain(t.dataset.k)}
+  else if(t.classList.contains('check'))check(+t.dataset.i);
+  else if(t.classList.contains('reveal'))reveal(+t.dataset.i);
+  else if(t.classList.contains('opt')){
+    sel[3]=t.dataset.v;
+    t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.tagName==='INPUT'){const s=e.target.closest('.step');if(s&&s.dataset.state==='active')check(+s.id.slice(1))}
+});
+init({mK:55.0,mP:35.0,act:25.0});
+</script>
+</body>
+</html>
