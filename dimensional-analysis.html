@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How dimensional analysis works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eff2;--panel:#ffffff;--ink:#16304a;--muted:#4f667a;--line:#c3d1da;--o:#2b78b8;--ok:#1d7a4a;--bad:#a8362d;--btn:#16304a;--btnink:#ffffff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c27;--panel:#182836;--ink:#e3edf4;--muted:#9bb0c1;--line:#2c4153;--o:#5aa6e6;--ok:#5fd08e;--bad:#f08178;--btn:#e3edf4;--btnink:#101c27;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.55}
+main{max-width:720px;margin:0 auto;padding:24px 18px 56px}
+h1{font-size:1.7rem;line-height:1.2;margin:0 0 8px}
+h2{font-size:1.25rem;margin:0 0 8px}
+h3{font-size:1.05rem;margin:18px 0 6px}
+.lead{color:var(--muted);margin:0 0 14px}
+.prog{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0 0 16px}
+.prog li{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 14px;font-size:.92rem;color:var(--muted)}
+.prog li.done{border-color:var(--ok);color:var(--ok);font-weight:700}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card p{margin:8px 0}
+.card ol,.card ul{margin:8px 0;padding-left:22px}
+.card li{margin:4px 0}
+.lv[data-state="locked"] .lvbody{display:none}
+.lv[data-state="open"] .lock{display:none}
+.lock{color:var(--muted)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;margin:10px 0;border:1px dashed var(--line);border-radius:10px;overflow-x:auto;font-size:1.05rem}
+.mul{font-size:1.2rem;color:var(--muted)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.25;font-size:.95rem}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 6px 2px}
+.fr>span:last-child{padding:2px 6px 0}
+.u.x{text-decoration:line-through;text-decoration-thickness:2px;color:var(--muted)}
+.res{font-weight:700;color:var(--ok)}
+.note{min-height:3.2em;margin:6px 0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.primary,.ghost{min-height:46px;padding:0 20px;font:inherit;font-weight:700;border-radius:10px;cursor:pointer}
+.primary{border:0;background:var(--btn);color:var(--btnink)}
+.ghost{border:2px solid var(--ink);background:transparent;color:inherit}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+.cmp{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:560px){.cmp{grid-template-columns:1fr 1fr}}
+.cmp>div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.good{border-color:var(--ok)!important}.badc{border-color:var(--bad)!important}
+.tag{font-weight:700;margin:0 0 6px}
+.good .tag{color:var(--ok)}.badc .tag{color:var(--bad)}
+.q{margin:14px 0 4px;font-weight:700}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+input{width:120px;min-height:46px;padding:6px 10px;font:inherit;color:inherit;background:transparent;border:2px solid var(--line);border-radius:10px}
+input.bad{border-color:var(--bad)}
+.fb{font-weight:700;margin:6px 0}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}.fb.hint{color:var(--o)}
+.setup{padding:8px 12px;border-left:4px solid var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent);border-radius:0 8px 8px 0}
+.tip{border-left:4px solid var(--o);padding:2px 0 2px 12px;margin:10px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>How dimensional analysis works</h1>
+<p class="lead">Also called the factor-label method. You solve a conversion problem by following the units, starting with one conversion factor and building up to three.</p>
+<ul class="prog" id="prog" aria-label="Progress"></ul>
+
+<section class="card">
+<h2>The big idea</h2>
+<p>A <b>conversion factor</b> is a fraction that equals 1, because the top and bottom describe the same amount. For example, 1000 mL and 1 L are the same volume, so 1000 mL ÷ 1 L = 1. Multiplying by 1 changes how a quantity is written, not how much of it there is.</p>
+<p>Units behave like numbers in a fraction: the same unit on the top and bottom cancels.</p>
+<ol>
+<li>Write what you start with, as a number and a unit.</li>
+<li>Pick a factor with the unit you want to remove on the <b>bottom</b>.</li>
+<li>Repeat until only the unit you want is left.</li>
+<li>Multiply the numbers on top and divide by the numbers on the bottom.</li>
+</ol>
+</section>
+
+<section class="card lv" id="L1" data-state="open">
+<h2>Level 1: one conversion factor</h2>
+<div class="lvbody">
+<p>Use one factor when your starting unit and your goal unit are directly related. Convert 2.50 L to milliliters. Step through it.</p>
+<div id="ex1"></div>
+<h3>Why the orientation matters</h3>
+<p>Both fractions equal 1, but only one cancels the unit you want to remove.</p>
+<div class="cmp" id="cmp"></div>
+<h3>Practice</h3>
+<div id="pr1"></div>
+</div>
+</section>
+
+<section class="card lv" id="L2" data-state="locked">
+<h2>Level 2: two conversion factors</h2>
+<p class="lock">Finish the Level 1 practice to unlock this. <button type="button" class="ghost skip" data-l="2">Skip ahead</button></p>
+<div class="lvbody">
+<p>Sometimes no single factor links what you have to what you want. Chain two: the unit left after the first factor is the unit the second factor cancels. How many moles are in 1.50 kg of NaCl?</p>
+<div id="ex2"></div>
+<h3>Practice</h3>
+<div id="pr2"></div>
+</div>
+</section>
+
+<section class="card lv" id="L3" data-state="locked">
+<h2>Level 3: three conversion factors</h2>
+<p class="lock">Finish the Level 2 practice to unlock this. <button type="button" class="ghost skip" data-l="3">Skip ahead</button></p>
+<div class="lvbody">
+<p>Stoichiometry usually needs three: grams to moles, a mole ratio from the balanced equation, then moles to grams. This is the kind of chain used in limiting reagent problems. For 10 KClO₃ + 3 P₄ → 3 P₄O₁₀ + 10 KCl, how many grams of P₄O₁₀ can 55.0 g of KClO₃ make?</p>
+<div id="ex3"></div>
+<p class="tip">Write the formula after every unit (mol KClO₃, not just mol). It tells you which substance each number belongs to, and the mole ratio is the one step that changes substances.</p>
+<h3>Practice</h3>
+<div id="pr3"></div>
+</div>
+</section>
+
+<section class="card">
+<h2>Common mistakes</h2>
+<ul>
+<li><b>Flipping a factor.</b> If the units don’t cancel, flip it.</li>
+<li><b>Dropping units partway.</b> Carry every unit through every step and cross them out as they cancel.</li>
+<li><b>Skipping the mole ratio.</b> Grams of one substance never convert straight into grams of another.</li>
+<li><b>Using an unbalanced equation.</b> The coefficients in your mole ratio must come from the balanced equation.</li>
+<li><b>Rounding too early.</b> Keep extra digits until the last step.</li>
+</ul>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const f3=x=>String(+x.toPrecision(3));
+const fr=(f,cn,cd)=>`<span class="fr"><span>${f.n.q} <span class="u${cn?' x':''}">${f.n.u}</span></span><span>${f.d.q} <span class="u${cd?' x':''}">${f.d.u}</span></span></span>`;
+
+function stepper(id,ex){
+  let n=0;const root=$(id),L=ex.f.length;
+  root.innerHTML='<div class="chain" aria-live="polite"></div><p class="note"></p><div class="actions"><button type="button" class="primary nxt">Add next factor</button><button type="button" class="ghost rst">Start over</button></div>';
+  const chain=root.querySelector('.chain'),note=root.querySelector('.note'),nxt=root.querySelector('.nxt');
+  function draw(){
+    let h=`<span>${ex.s.q} <span class="u${n?' x':''}">${ex.s.u}</span></span>`;
+    for(let j=0;j<n;j++)h+='<span class="mul">×</span>'+fr(ex.f[j],j<n-1,true);
+    if(n===L)h+=`<span class="mul">=</span><span class="res">${ex.r}</span>`;
+    chain.innerHTML=h;note.textContent=ex.notes[n];nxt.disabled=n===L;
+  }
+  nxt.onclick=()=>{if(n<L){n++;draw()}};
+  root.querySelector('.rst').onclick=()=>{n=0;draw()};
+  draw();
+}
+stepper('ex1',{s:{q:'2.50',u:'L'},f:[{n:{q:'1000',u:'mL'},d:{q:'1',u:'L'}}],r:'2500 mL',
+  notes:['Start with what you have: 2.50 L. The goal is mL.','The L on the bottom cancels the L you started with, leaving mL. Then 2.50 × 1000 ÷ 1 = 2500 mL.']});
+stepper('ex2',{s:{q:'1.50',u:'kg NaCl'},
+  f:[{n:{q:'1000',u:'g NaCl'},d:{q:'1',u:'kg NaCl'}},{n:{q:'1',u:'mol NaCl'},d:{q:'58.44',u:'g NaCl'}}],r:'25.7 mol NaCl',
+  notes:['Start with 1.50 kg NaCl. The goal is moles of NaCl. No single factor connects them, so use two.',
+    'First factor: kg cancel, leaving grams of NaCl. Now you can use the molar mass.',
+    'Second factor: grams cancel, leaving moles of NaCl. Then (1.50 × 1000 × 1) ÷ (1 × 58.44) = 25.7 mol NaCl.']});
+stepper('ex3',{s:{q:'55.0',u:'g KClO₃'},
+  f:[{n:{q:'1',u:'mol KClO₃'},d:{q:'122.55',u:'g KClO₃'}},{n:{q:'3',u:'mol P₄O₁₀'},d:{q:'10',u:'mol KClO₃'}},{n:{q:'283.88',u:'g P₄O₁₀'},d:{q:'1',u:'mol P₄O₁₀'}}],r:'38.2 g P₄O₁₀',
+  notes:['Start with 55.0 g KClO₃. The goal is grams of P₄O₁₀.',
+    'Molar mass: grams of KClO₃ cancel, leaving moles of KClO₃.',
+    'Mole ratio from the balanced equation: moles of KClO₃ cancel, leaving moles of P₄O₁₀.',
+    'Molar mass again: moles of P₄O₁₀ cancel, leaving grams of P₄O₁₀. (55.0 × 1 × 3 × 283.88) ÷ (122.55 × 10 × 1) = 38.2 g P₄O₁₀.']});
+
+$('cmp').innerHTML=`<div class="good"><p class="tag">Right way up</p>
+<div class="chain"><span>2.50 <span class="u x">L</span></span><span class="mul">×</span>${fr({n:{q:'1000',u:'mL'},d:{q:'1',u:'L'}},false,true)}<span class="mul">=</span><span class="res">2500 mL</span></div>
+<p>L cancels. Only mL is left.</p></div>
+<div class="badc"><p class="tag">Flipped</p>
+<div class="chain"><span>2.50 L</span><span class="mul">×</span>${fr({n:{q:'1',u:'L'},d:{q:'1000',u:'mL'}},false,false)}<span class="mul">=</span><span>0.0025 L²/mL</span></div>
+<p>Nothing cancels, and L²/mL is not the unit you wanted. That’s your signal to flip the factor.</p></div>`;
+
+const PR={1:[
+ {q:'Convert 0.350 L to milliliters.',ans:350,unit:'mL',path:'L → mL',setup:'0.350 L × (1000 mL ÷ 1 L) = 350 mL'},
+ {q:'Convert 0.0450 kg to grams.',ans:45.0,unit:'g',path:'kg → g',setup:'0.0450 kg × (1000 g ÷ 1 kg) = 45.0 g'},
+ {q:'How many moles are in 25.0 g of H₂O? (Molar mass 18.02 g/mol)',ans:25/18.02,unit:'mol H₂O',path:'g H₂O → mol H₂O',setup:'25.0 g H₂O × (1 mol H₂O ÷ 18.02 g H₂O) = 1.39 mol H₂O'}],
+ 2:[
+ {q:'How many moles of NaCl are in 250. mL of a 0.100 mol/L NaCl solution?',ans:.025,unit:'mol NaCl',path:'mL → L → mol NaCl',setup:'250. mL × (1 L ÷ 1000 mL) × (0.100 mol NaCl ÷ 1 L) = 0.0250 mol NaCl'},
+ {q:'What is the mass in kilograms of 3.00 mol of CO₂? (Molar mass 44.01 g/mol)',ans:3*44.01/1000,unit:'kg CO₂',path:'mol CO₂ → g CO₂ → kg CO₂',setup:'3.00 mol CO₂ × (44.01 g CO₂ ÷ 1 mol CO₂) × (1 kg ÷ 1000 g) = 0.132 kg CO₂'},
+ {q:'For 2 Mg + O₂ → 2 MgO, how many moles of MgO form from 6.00 g of Mg? (Molar mass of Mg 24.31 g/mol)',ans:6/24.31,unit:'mol MgO',path:'g Mg → mol Mg → mol MgO',setup:'6.00 g Mg × (1 mol Mg ÷ 24.31 g Mg) × (2 mol MgO ÷ 2 mol Mg) = 0.247 mol MgO'}]};
+const TPL=[
+ {eq:'2 H₂ + O₂ → 2 H₂O',r:'H₂',mr:2.016,cr:2,p:'H₂O',mp:18.02,cp:2},
+ {eq:'N₂ + 3 H₂ → 2 NH₃',r:'H₂',mr:2.016,cr:3,p:'NH₃',mp:17.03,cp:2},
+ {eq:'2 Mg + O₂ → 2 MgO',r:'Mg',mr:24.31,cr:2,p:'MgO',mp:40.31,cp:2},
+ {eq:'CH₄ + 2 O₂ → CO₂ + 2 H₂O',r:'CH₄',mr:16.04,cr:1,p:'CO₂',mp:44.01,cp:1},
+ {eq:'4 Al + 3 O₂ → 2 Al₂O₃',r:'Al',mr:26.98,cr:4,p:'Al₂O₃',mp:101.96,cp:2}];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function gen3(){
+  return shuffle([...TPL]).slice(0,3).map(t=>{
+    const m=Math.round((5+Math.random()*45)*10)/10,ans=m/t.mr*t.cp/t.cr*t.mp;
+    return{q:`For ${t.eq}, how many grams of ${t.p} can be made from ${m.toFixed(1)} g of ${t.r}? (Assume plenty of the other reactant. Molar masses: ${t.r} ${t.mr} g/mol, ${t.p} ${t.mp} g/mol.)`,
+      ans,unit:'g '+t.p,path:`g ${t.r} → mol ${t.r} → mol ${t.p} → g ${t.p}`,
+      setup:`${m.toFixed(1)} g ${t.r} × (1 mol ${t.r} ÷ ${t.mr} g ${t.r}) × (${t.cp} mol ${t.p} ÷ ${t.cr} mol ${t.r}) × (${t.mp} g ${t.p} ÷ 1 mol ${t.p}) = ${f3(ans)} g ${t.p}`};
+  });
+}
+PR[3]=gen3();
+
+const done={1:false,2:false,3:false};
+function prog(){
+  $('prog').innerHTML=[1,2,3].map(l=>`<li class="${done[l]?'done':''}">${done[l]?'✓ ':''}Level ${l}: ${['one','two','three'][l-1]} factor${l>1?'s':''}</li>`).join('');
+}
+function render(l){
+  PR[l].forEach(p=>p.done=false);
+  $('pr'+l).innerHTML=PR[l].map((p,i)=>`<div><p class="q">${i+1}. ${p.q}</p>
+  <div class="row"><input id="a${l}-${i}" type="number" step="any" inputmode="decimal" aria-label="Answer ${i+1}"><span>${p.unit}</span>
+  <button type="button" class="primary chk" data-l="${l}" data-i="${i}">Check</button>
+  <button type="button" class="ghost hnt" data-l="${l}" data-i="${i}">Hint</button>
+  <button type="button" class="ghost shw" data-l="${l}" data-i="${i}">Show the setup</button></div>
+  <p class="fb" id="fb${l}-${i}" aria-live="polite"></p><p class="setup" id="su${l}-${i}" hidden>${p.setup}</p></div>`).join('')
+  +(l===3?'<div class="actions"><button type="button" class="primary more" hidden>More practice with new numbers</button></div>':'');
+}
+function unlock(l){
+  const el=$('L'+l);if(el.dataset.state==='open')return;
+  el.dataset.state='open';
+  el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+}
+function fin(l,i){
+  PR[l][i].done=true;
+  if(PR[l].every(p=>p.done)){
+    done[l]=true;prog();
+    if(l<3)unlock(l+1);else document.querySelector('#pr3 .more').hidden=false;
+  }
+}
+function chk(l,i){
+  const p=PR[l][i],v=parseFloat($(`a${l}-${i}`).value),fb=$(`fb${l}-${i}`);
+  if(Number.isNaN(v)){fb.className='fb no';fb.textContent='Enter an answer first.';return}
+  const ok=Math.abs(v-p.ans)<=.01*p.ans;
+  $(`a${l}-${i}`).classList.toggle('bad',!ok);
+  fb.className='fb '+(ok?'ok':'no');
+  fb.textContent=ok?'Correct.':'Not quite. Start with the unit you have, and pick each factor so its bottom unit cancels the unit before it. Try the hint.';
+  if(ok){$(`su${l}-${i}`).hidden=false;fin(l,i)}
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const l=+b.dataset.l,i=+b.dataset.i;
+  if(b.classList.contains('chk'))chk(l,i);
+  else if(b.classList.contains('hnt')){const fb=$(`fb${l}-${i}`);fb.className='fb hint';fb.textContent='Unit path: '+PR[l][i].path+'. Each arrow is one conversion factor.'}
+  else if(b.classList.contains('shw')){$(`su${l}-${i}`).hidden=false;fin(l,i)}
+  else if(b.classList.contains('skip'))unlock(l);
+  else if(b.classList.contains('more')){PR[3]=gen3();render(3)}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.tagName==='INPUT'&&/^a\d-\d$/.test(e.target.id)){const [l,i]=e.target.id.slice(1).split('-');chk(+l,+i)}
+});
+[1,2,3].forEach(render);prog();
+</script>
+</body>
+</html>
