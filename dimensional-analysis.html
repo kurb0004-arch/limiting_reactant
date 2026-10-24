@@ -57,13 +57,16 @@ input.bad{border-color:var(--bad)}
 .fb{font-weight:700;margin:6px 0}
 .fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}.fb.hint{color:var(--o)}
 .setup{padding:8px 12px;border-left:4px solid var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent);border-radius:0 8px 8px 0}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted)}
 .tip{border-left:4px solid var(--o);padding:2px 0 2px 12px;margin:10px 0}
 </style>
 </head>
 <body>
 <main>
 <h1>How dimensional analysis works</h1>
-<p class="lead">Also called the factor-label method. You solve a conversion problem by following the units, starting with one conversion factor and building up to three.</p>
+<p class="lead">Also called the factor-label method. You solve a conversion problem by following the units, starting with one conversion factor and building up to three. All of the factors use metric prefixes.</p>
 <ul class="prog" id="prog" aria-label="Progress"></ul>
 
 <section class="card">
@@ -76,6 +79,21 @@ input.bad{border-color:var(--bad)}
 <li>Repeat until only the unit you want is left.</li>
 <li>Multiply the numbers on top and divide by the numbers on the bottom.</li>
 </ol>
+</section>
+
+<section class="card">
+<h2>Metric prefixes</h2>
+<p>A prefix tells you how a unit compares to the base unit (meter, gram, or liter). Each row gives an equality you can turn into a conversion factor, shown here with meters.</p>
+<div style="overflow-x:auto"><table>
+<tr><th>Prefix</th><th>Symbol</th><th>Meaning</th><th>Equality</th></tr>
+<tr><td>kilo</td><td>k</td><td>1000</td><td>1 km = 1000 m</td></tr>
+<tr><td>deci</td><td>d</td><td>1/10</td><td>10 dm = 1 m</td></tr>
+<tr><td>centi</td><td>c</td><td>1/100</td><td>100 cm = 1 m</td></tr>
+<tr><td>milli</td><td>m</td><td>1/1000</td><td>1000 mm = 1 m</td></tr>
+<tr><td>micro</td><td>μ</td><td>1/1,000,000</td><td>1×10⁶ μm = 1 m</td></tr>
+<tr><td>nano</td><td>n</td><td>1/1,000,000,000</td><td>1×10⁹ nm = 1 m</td></tr>
+</table></div>
+<p class="tip">The base unit is your bridge. To go from one prefix to another, go to the base unit first, then to the prefix you want.</p>
 </section>
 
 <section class="card lv" id="L1" data-state="open">
@@ -95,7 +113,7 @@ input.bad{border-color:var(--bad)}
 <h2>Level 2: two conversion factors</h2>
 <p class="lock">Finish the Level 1 practice to unlock this. <button type="button" class="ghost skip" data-l="2">Skip ahead</button></p>
 <div class="lvbody">
-<p>Sometimes no single factor links what you have to what you want. Chain two: the unit left after the first factor is the unit the second factor cancels. How many moles are in 1.50 kg of NaCl?</p>
+<p>When you convert from one prefix to another, go through the base unit. Chain two factors: the unit left after the first factor is the unit the second factor cancels. Convert 725 μg to milligrams.</p>
 <div id="ex2"></div>
 <h3>Practice</h3>
 <div id="pr2"></div>
@@ -106,9 +124,9 @@ input.bad{border-color:var(--bad)}
 <h2>Level 3: three conversion factors</h2>
 <p class="lock">Finish the Level 2 practice to unlock this. <button type="button" class="ghost skip" data-l="3">Skip ahead</button></p>
 <div class="lvbody">
-<p>Stoichiometry usually needs three: grams to moles, a mole ratio from the balanced equation, then moles to grams. This is the kind of chain used in limiting reagent problems. For 10 KClO₃ + 3 P₄ → 3 P₄O₁₀ + 10 KCl, how many grams of P₄O₁₀ can 55.0 g of KClO₃ make?</p>
+<p>A rate such as km/h has a unit on the top and a unit on the bottom, so each one needs converting. That usually takes three factors. Convert 72 km/h to m/s.</p>
 <div id="ex3"></div>
-<p class="tip">Write the formula after every unit (mol KClO₃, not just mol). It tells you which substance each number belongs to, and the mole ratio is the one step that changes substances.</p>
+<p class="tip">In a rate, a unit on the bottom of what you have cancels with the same unit on the <b>top</b> of a factor. Cross out units from both the top and the bottom as you go.</p>
 <h3>Practice</h3>
 <div id="pr3"></div>
 </div>
@@ -119,8 +137,8 @@ input.bad{border-color:var(--bad)}
 <ul>
 <li><b>Flipping a factor.</b> If the units don’t cancel, flip it.</li>
 <li><b>Dropping units partway.</b> Carry every unit through every step and cross them out as they cancel.</li>
-<li><b>Skipping the mole ratio.</b> Grams of one substance never convert straight into grams of another.</li>
-<li><b>Using an unbalanced equation.</b> The coefficients in your mole ratio must come from the balanced equation.</li>
+<li><b>Reversing a prefix.</b> 1000 mm = 1 m, not 1 mm = 1000 m. The prefix goes with the bigger number.</li>
+<li><b>Forgetting the base unit.</b> Going from μg to mg is easier through grams than by guessing a single factor.</li>
 <li><b>Rounding too early.</b> Keep extra digits until the last step.</li>
 </ul>
 </section>
@@ -135,9 +153,20 @@ function stepper(id,ex){
   let n=0;const root=$(id),L=ex.f.length;
   root.innerHTML='<div class="chain" aria-live="polite"></div><p class="note"></p><div class="actions"><button type="button" class="primary nxt">Add next factor</button><button type="button" class="ghost rst">Start over</button></div>';
   const chain=root.querySelector('.chain'),note=root.querySelector('.note'),nxt=root.querySelector('.nxt');
+  function marks(k){
+    const x={},top=[['t0',ex.s.u]],bot=ex.s.d?[['b0',ex.s.d]]:[];
+    for(let j=0;j<k;j++){
+      const f=ex.f[j];
+      const a=top.find(t=>!x[t[0]]&&t[1]===f.d.u);if(a){x[a[0]]=1;x['d'+j]=1}
+      const b=bot.find(t=>!x[t[0]]&&t[1]===f.n.u);if(b){x[b[0]]=1;x['n'+j]=1}
+      top.push(['n'+j,f.n.u]);bot.push(['d'+j,f.d.u]);
+    }
+    return x;
+  }
   function draw(){
-    let h=`<span>${ex.s.q} <span class="u${n?' x':''}">${ex.s.u}</span></span>`;
-    for(let j=0;j<n;j++)h+='<span class="mul">×</span>'+fr(ex.f[j],j<n-1,true);
+    const x=marks(n),u=(t,i)=>`<span class="u${x[i]?' x':''}">${t}</span>`;
+    let h=ex.s.d?`<span class="fr"><span>${ex.s.q} ${u(ex.s.u,'t0')}</span><span>${u(ex.s.d,'b0')}</span></span>`:`<span>${ex.s.q} ${u(ex.s.u,'t0')}</span>`;
+    for(let j=0;j<n;j++){const f=ex.f[j];h+=`<span class="mul">×</span><span class="fr"><span>${f.n.q} ${u(f.n.u,'n'+j)}</span><span>${f.d.q} ${u(f.d.u,'d'+j)}</span></span>`}
     if(n===L)h+=`<span class="mul">=</span><span class="res">${ex.r}</span>`;
     chain.innerHTML=h;note.textContent=ex.notes[n];nxt.disabled=n===L;
   }
@@ -147,17 +176,17 @@ function stepper(id,ex){
 }
 stepper('ex1',{s:{q:'2.50',u:'L'},f:[{n:{q:'1000',u:'mL'},d:{q:'1',u:'L'}}],r:'2500 mL',
   notes:['Start with what you have: 2.50 L. The goal is mL.','The L on the bottom cancels the L you started with, leaving mL. Then 2.50 × 1000 ÷ 1 = 2500 mL.']});
-stepper('ex2',{s:{q:'1.50',u:'kg NaCl'},
-  f:[{n:{q:'1000',u:'g NaCl'},d:{q:'1',u:'kg NaCl'}},{n:{q:'1',u:'mol NaCl'},d:{q:'58.44',u:'g NaCl'}}],r:'25.7 mol NaCl',
-  notes:['Start with 1.50 kg NaCl. The goal is moles of NaCl. No single factor connects them, so use two.',
-    'First factor: kg cancel, leaving grams of NaCl. Now you can use the molar mass.',
-    'Second factor: grams cancel, leaving moles of NaCl. Then (1.50 × 1000 × 1) ÷ (1 × 58.44) = 25.7 mol NaCl.']});
-stepper('ex3',{s:{q:'55.0',u:'g KClO₃'},
-  f:[{n:{q:'1',u:'mol KClO₃'},d:{q:'122.55',u:'g KClO₃'}},{n:{q:'3',u:'mol P₄O₁₀'},d:{q:'10',u:'mol KClO₃'}},{n:{q:'283.88',u:'g P₄O₁₀'},d:{q:'1',u:'mol P₄O₁₀'}}],r:'38.2 g P₄O₁₀',
-  notes:['Start with 55.0 g KClO₃. The goal is grams of P₄O₁₀.',
-    'Molar mass: grams of KClO₃ cancel, leaving moles of KClO₃.',
-    'Mole ratio from the balanced equation: moles of KClO₃ cancel, leaving moles of P₄O₁₀.',
-    'Molar mass again: moles of P₄O₁₀ cancel, leaving grams of P₄O₁₀. (55.0 × 1 × 3 × 283.88) ÷ (122.55 × 10 × 1) = 38.2 g P₄O₁₀.']});
+stepper('ex2',{s:{q:'725',u:'μg'},
+  f:[{n:{q:'1',u:'g'},d:{q:'1×10⁶',u:'μg'}},{n:{q:'1000',u:'mg'},d:{q:'1',u:'g'}}],r:'0.725 mg',
+  notes:['Start with 725 μg. The goal is mg. Go through the base unit, grams.',
+    'First factor: μg cancel, leaving grams.',
+    'Second factor: grams cancel, leaving mg. Then (725 × 1 × 1000) ÷ (1×10⁶ × 1) = 0.725 mg.']});
+stepper('ex3',{s:{q:'72',u:'km',d:'h'},
+  f:[{n:{q:'1000',u:'m'},d:{q:'1',u:'km'}},{n:{q:'1',u:'h'},d:{q:'60',u:'min'}},{n:{q:'1',u:'min'},d:{q:'60',u:'s'}}],r:'20 m/s',
+  notes:['Start with 72 km/h. The goal is m/s. Both the top and the bottom unit need converting.',
+    'km on the bottom of the factor cancels km on top, leaving m on top.',
+    'h on top of the factor cancels h on the bottom of what you started with, leaving min on the bottom.',
+    'min on top cancels min on the bottom, leaving s. Only m on top and s on the bottom remain. (72 × 1000 × 1 × 1) ÷ (1 × 60 × 60) = 20 m/s.']});
 
 $('cmp').innerHTML=`<div class="good"><p class="tag">Right way up</p>
 <div class="chain"><span>2.50 <span class="u x">L</span></span><span class="mul">×</span>${fr({n:{q:'1000',u:'mL'},d:{q:'1',u:'L'}},false,true)}<span class="mul">=</span><span class="res">2500 mL</span></div>
@@ -169,26 +198,26 @@ $('cmp').innerHTML=`<div class="good"><p class="tag">Right way up</p>
 const PR={1:[
  {q:'Convert 0.350 L to milliliters.',ans:350,unit:'mL',path:'L → mL',setup:'0.350 L × (1000 mL ÷ 1 L) = 350 mL'},
  {q:'Convert 0.0450 kg to grams.',ans:45.0,unit:'g',path:'kg → g',setup:'0.0450 kg × (1000 g ÷ 1 kg) = 45.0 g'},
- {q:'How many moles are in 25.0 g of H₂O? (Molar mass 18.02 g/mol)',ans:25/18.02,unit:'mol H₂O',path:'g H₂O → mol H₂O',setup:'25.0 g H₂O × (1 mol H₂O ÷ 18.02 g H₂O) = 1.39 mol H₂O'}],
+ {q:'Convert 8.50 cm to meters.',ans:.085,unit:'m',path:'cm → m',setup:'8.50 cm × (1 m ÷ 100 cm) = 0.0850 m'}],
  2:[
- {q:'How many moles of NaCl are in 250. mL of a 0.100 mol/L NaCl solution?',ans:.025,unit:'mol NaCl',path:'mL → L → mol NaCl',setup:'250. mL × (1 L ÷ 1000 mL) × (0.100 mol NaCl ÷ 1 L) = 0.0250 mol NaCl'},
- {q:'What is the mass in kilograms of 3.00 mol of CO₂? (Molar mass 44.01 g/mol)',ans:3*44.01/1000,unit:'kg CO₂',path:'mol CO₂ → g CO₂ → kg CO₂',setup:'3.00 mol CO₂ × (44.01 g CO₂ ÷ 1 mol CO₂) × (1 kg ÷ 1000 g) = 0.132 kg CO₂'},
- {q:'For 2 Mg + O₂ → 2 MgO, how many moles of MgO form from 6.00 g of Mg? (Molar mass of Mg 24.31 g/mol)',ans:6/24.31,unit:'mol MgO',path:'g Mg → mol Mg → mol MgO',setup:'6.00 g Mg × (1 mol Mg ÷ 24.31 g Mg) × (2 mol MgO ÷ 2 mol Mg) = 0.247 mol MgO'}]};
+ {q:'Convert 4500 mm to kilometers.',ans:.0045,unit:'km',path:'mm → m → km',setup:'4500 mm × (1 m ÷ 1000 mm) × (1 km ÷ 1000 m) = 0.0045 km'},
+ {q:'Convert 250 nm to micrometers.',ans:.25,unit:'μm',path:'nm → m → μm',setup:'250 nm × (1 m ÷ 1×10⁹ nm) × (1×10⁶ μm ÷ 1 m) = 0.25 μm'},
+ {q:'Convert 0.80 dm to centimeters.',ans:8,unit:'cm',path:'dm → m → cm',setup:'0.80 dm × (1 m ÷ 10 dm) × (100 cm ÷ 1 m) = 8.0 cm'}]};
 const TPL=[
- {eq:'2 H₂ + O₂ → 2 H₂O',r:'H₂',mr:2.016,cr:2,p:'H₂O',mp:18.02,cp:2},
- {eq:'N₂ + 3 H₂ → 2 NH₃',r:'H₂',mr:2.016,cr:3,p:'NH₃',mp:17.03,cp:2},
- {eq:'2 Mg + O₂ → 2 MgO',r:'Mg',mr:24.31,cr:2,p:'MgO',mp:40.31,cp:2},
- {eq:'CH₄ + 2 O₂ → CO₂ + 2 H₂O',r:'CH₄',mr:16.04,cr:1,p:'CO₂',mp:44.01,cp:1},
- {eq:'4 Al + 3 O₂ → 2 Al₂O₃',r:'Al',mr:26.98,cr:4,p:'Al₂O₃',mp:101.96,cp:2}];
+ ()=>{const v=9*(2+Math.floor(Math.random()*13)),ans=v/3.6;
+   return{q:`A car travels at ${v} km/h. What is its speed in m/s?`,ans,unit:'m/s',path:'km → m, then h → min → s',
+   setup:`${v} km/h × (1000 m ÷ 1 km) × (1 h ÷ 60 min) × (1 min ÷ 60 s) = ${f3(ans)} m/s`}},
+ ()=>{const a=10*(2+Math.floor(Math.random()*88)),ans=a/1000;
+   return{q:`A solution contains ${a} mg of solute per mL. Express the concentration in kg/L.`,ans,unit:'kg/L',path:'mg → g → kg, then mL → L',
+   setup:`${a} mg/mL × (1 g ÷ 1000 mg) × (1 kg ÷ 1000 g) × (1000 mL ÷ 1 L) = ${f3(ans)} kg/L`}},
+ ()=>{const a=5*(1+Math.floor(Math.random()*19)),ans=.6*a;
+   return{q:`An IV delivers ${a} mL of fluid per minute. Express the flow rate in dL/h.`,ans,unit:'dL/h',path:'mL → L → dL, then min → h',
+   setup:`${a} mL/min × (1 L ÷ 1000 mL) × (10 dL ÷ 1 L) × (60 min ÷ 1 h) = ${f3(ans)} dL/h`}},
+ ()=>{const a=10*(1+Math.floor(Math.random()*99)),ans=a/10;
+   return{q:`A blood sample contains ${a} μg of a drug per mL. Express this in mg/dL.`,ans,unit:'mg/dL',path:'μg → mg, then mL → L → dL',
+   setup:`${a} μg/mL × (1 mg ÷ 1000 μg) × (1000 mL ÷ 1 L) × (1 L ÷ 10 dL) = ${f3(ans)} mg/dL`}}];
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function gen3(){
-  return shuffle([...TPL]).slice(0,3).map(t=>{
-    const m=Math.round((5+Math.random()*45)*10)/10,ans=m/t.mr*t.cp/t.cr*t.mp;
-    return{q:`For ${t.eq}, how many grams of ${t.p} can be made from ${m.toFixed(1)} g of ${t.r}? (Assume plenty of the other reactant. Molar masses: ${t.r} ${t.mr} g/mol, ${t.p} ${t.mp} g/mol.)`,
-      ans,unit:'g '+t.p,path:`g ${t.r} → mol ${t.r} → mol ${t.p} → g ${t.p}`,
-      setup:`${m.toFixed(1)} g ${t.r} × (1 mol ${t.r} ÷ ${t.mr} g ${t.r}) × (${t.cp} mol ${t.p} ÷ ${t.cr} mol ${t.r}) × (${t.mp} g ${t.p} ÷ 1 mol ${t.p}) = ${f3(ans)} g ${t.p}`};
-  });
-}
+function gen3(){return shuffle([...TPL]).slice(0,3).map(f=>f())}
 PR[3]=gen3();
 
 const done={1:false,2:false,3:false};
